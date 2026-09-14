@@ -153,14 +153,31 @@ final class ArticleRepository
         );
     }
 
-    private const WORDS_PER_MINUTE = 200;
+    /**
+     * Estimated reading time in whole minutes (200 words/minute, minimum 1).
+     */
+    private function readingTime(string $markdown): int
+    {
+        $words = str_word_count(strip_tags($markdown));
 
-/**
- * Estimated reading time in whole minutes (200 words/minute, minimum 1).
- */
-private function readingTime(string $markdown): int
-{
-    $words = str_word_count(strip_tags($markdown));
+        return max(1, (int) ceil($words / 200));
+    }
 
-    return max(1, (int) ceil($words / 200));
+    private function converter(): MarkdownConverter
+    {
+        if (null === $this->converter) {
+            $environment = new Environment();
+            $environment->addExtension(new CommonMarkCoreExtension());
+            $environment->addExtension(new GithubFlavoredMarkdownExtension());
+
+            $this->converter = new MarkdownConverter($environment);
+        }
+
+        return $this->converter;
+    }
+
+    private function frontMatterParser(): FrontMatterParser
+    {
+        return $this->frontMatter ??= new FrontMatterParser(new SymfonyYamlFrontMatterParser());
+    }
 }
